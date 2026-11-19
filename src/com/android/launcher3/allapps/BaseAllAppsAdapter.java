@@ -74,6 +74,8 @@ public abstract class BaseAllAppsAdapter
     public static final int VIEW_TYPE_PRIVATE_SPACE_APP_ICON = 1 << 9;
     public static final int VIEW_TYPE_PRIVATE_SPACE_RESULT = 1 << 10;
     public static final int VIEW_TYPE_FOLDER = 1 << 11;
+    /** A tappable search result row: calculator/unit result or web search. */
+    public static final int VIEW_TYPE_SEARCH_ACTION = 1 << 12;
     public static final int NEXT_ID = 12;
 
     // Common view type masks
@@ -118,6 +120,8 @@ public abstract class BaseAllAppsAdapter
         public FolderInfo folderInfo = null;
         // Private App Decorator
         public SectionDecorationInfo decorationInfo = null;
+        // Action run when a VIEW_TYPE_SEARCH_ACTION row is tapped
+        public Runnable searchAction = null;
         public AdapterItem(int viewType) {
             this.viewType = viewType;
         }
@@ -269,6 +273,9 @@ public abstract class BaseAllAppsAdapter
             case VIEW_TYPE_EMPTY_SEARCH:
                 return new ViewHolder(mLayoutInflater.inflate(R.layout.all_apps_empty_search,
                         parent, false));
+            case VIEW_TYPE_SEARCH_ACTION:
+                return new ViewHolder(mLayoutInflater.inflate(R.layout.all_apps_search_action,
+                        parent, false));
             case VIEW_TYPE_ALL_APPS_DIVIDER, VIEW_TYPE_PRIVATE_SPACE_SYS_APPS_DIVIDER:
                 return new ViewHolder(mLayoutInflater.inflate(
                         R.layout.private_space_divider, parent, false));
@@ -352,6 +359,17 @@ public abstract class BaseAllAppsAdapter
                     ((TextView) holder.itemView).setText(mActivityContext.asContext().getString(
                             R.string.all_apps_no_search_results, info.title));
                 }
+                break;
+            }
+            case VIEW_TYPE_SEARCH_ACTION: {
+                AdapterItem item = mApps.getAdapterItems().get(position);
+                TextView row = (TextView) holder.itemView;
+                row.setText(item.itemInfo.title);
+                row.setOnClickListener(v -> {
+                    if (item.searchAction != null) {
+                        item.searchAction.run();
+                    }
+                });
                 break;
             }
             case VIEW_TYPE_PRIVATE_SPACE_HEADER:

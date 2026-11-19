@@ -18,7 +18,11 @@ package com.android.launcher3.allapps.search;
 import static com.android.launcher3.allapps.AlphabeticalAppsList.PRIVATE_SPACE_PACKAGE;
 import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_EMPTY_SEARCH;
 import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_PRIVATE_SPACE_RESULT;
+import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_SEARCH_ACTION;
 
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -27,6 +31,7 @@ import android.content.pm.ResolveInfo;
 import android.os.Handler;
 import android.os.Process;
 import android.os.UserHandle;
+import android.net.Uri;
 import android.provider.Settings;
 
 import androidx.annotation.AnyThread;
@@ -91,8 +96,14 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
             if (isPrivateSpaceQuery(query) && isPrivateSpaceAvailable()) {
                 result.add(0, new AdapterItem(VIEW_TYPE_PRIVATE_SPACE_RESULT));
             }
+            // Ranking: direct answers (calculator / unit conversion) first, then the
+            // matching apps and Settings pages, then the web search fallback last.
+            result.addAll(0, getDirectAnswerItems(query));
             if (mAddNoResultsMessage && result.isEmpty()) {
                 result.add(getEmptyMessageAdapterItem(query));
+            }
+            if (!query.trim().isEmpty()) {
+                result.add(getWebSearchItem(query));
             }
             mResultHandler.post(() -> {
                 if (searchGeneration == mSearchGeneration) {
@@ -100,6 +111,62 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
                 }
             });
         });
+    }
+
+    /** Calculator and unit-conversion answers for the query, if it is one. */
+    private List<AdapterItem> getDirectAnswerItems(String query) {
+        List<AdapterItem> items = new ArrayList<>();
+        String trimmed = query.trim();
+        String calc = SearchCalculator.evaluate(trimmed);
+        if (calc != null) {
+            items.add(searchActionItem(trimmed + " = " + calc, copyToClipboard(calc)));
+        }
+        String conversion = SearchCalculator.convert(trimmed);
+        if (conversion != null) {
+            items.add(searchActionItem(conversion, copyToClipboard(conversion)));
+        }
+        return items;
+    }
+
+    private AdapterItem getWebSearchItem(String query) {
+        String trimmed = query.trim();
+        return searchActionItem(
+                mContext.getString(R.string.all_apps_search_web, trimmed),
+                () -> launchWebSearch(trimmed));
+    }
+
+    private static AdapterItem searchActionItem(String title, Runnable action) {
+        AdapterItem item = new AdapterItem(VIEW_TYPE_SEARCH_ACTION);
+        AppInfo placeHolder = new AppInfo();
+        placeHolder.title = title;
+        item.itemInfo = placeHolder;
+        item.searchAction = action;
+        return item;
+    }
+
+    private Runnable copyToClipboard(String text) {
+        return () -> {
+            ClipboardManager cm = mContext.getSystemService(ClipboardManager.class);
+            if (cm != null) {
+                cm.setPrimaryClip(ClipData.newPlainText(null, text));
+            }
+        };
+    }
+
+    private void launchWebSearch(String query) {
+        Intent intent = new Intent(Intent.ACTION_WEB_SEARCH)
+                .putExtra("query", query)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (intent.resolveActivity(mContext.getPackageManager()) == null) {
+            intent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://www.google.com/search?q=" + Uri.encode(query)))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+        try {
+            mContext.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            // No handler for search or web links; nothing else to do.
+        }
     }
 
     /** A Settings page that is searchable from the app drawer. */
