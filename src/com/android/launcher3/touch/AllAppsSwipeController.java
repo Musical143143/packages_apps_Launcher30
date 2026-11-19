@@ -15,7 +15,6 @@
  */
 package com.android.launcher3.touch;
 
-import static com.android.app.animation.Interpolators.ACCELERATE;
 import static com.android.app.animation.Interpolators.DECELERATED_EASE;
 import static com.android.app.animation.Interpolators.EMPHASIZED;
 import static com.android.app.animation.Interpolators.FINAL_FRAME;
@@ -126,8 +125,10 @@ public class AllAppsSwipeController extends AbstractStateChangeTouchController {
                 Interpolators.reverse(ALL_APPS_SCRIM_RESPONDER));
         config.setInterpolator(ANIM_ALL_APPS_FADE, FINAL_FRAME);
         if (!config.isUserControlled()) {
-            config.duration = 200;
-            config.setInterpolator(ANIM_VERTICAL_PROGRESS, ACCELERATE);
+            // Slightly longer, decelerating close so the drawer settles smoothly
+            // instead of snapping shut.
+            config.duration = 280;
+            config.setInterpolator(ANIM_VERTICAL_PROGRESS, DECELERATED_EASE);
         }
         config.setInterpolator(ANIM_WORKSPACE_SCALE,
                 Interpolators.reverse(ALL_APPS_SHEET_DEPTH));
