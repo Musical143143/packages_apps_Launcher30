@@ -92,9 +92,11 @@
 
     <item name="swipe_up_scale_start"  type="dimen" format="float">0.88</item>
 
-    <item name="swipe_up_rect_x_damping_ratio" type="dimen" format="float">0.965</item>
+    <!-- Critically damped (1.0) so the app window settles on its target without overshooting
+         or wobbling back, which read as jitter at the end of app open/close. -->
+    <item name="swipe_up_rect_x_damping_ratio" type="dimen" format="float">1.0</item>
     <item name="swipe_up_rect_x_stiffness" type="dimen" format="float">450</item>
-    <item name="swipe_up_rect_y_damping_ratio" type="dimen" format="float">0.95</item>
+    <item name="swipe_up_rect_y_damping_ratio" type="dimen" format="float">1.0</item>
     <item name="swipe_up_rect_y_stiffness" type="dimen" format="float">400</item>
 
     <!-- Taskbar -->
