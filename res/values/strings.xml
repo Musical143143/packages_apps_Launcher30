@@ -195,6 +195,9 @@
     <!-- Loading apps text. [CHAR_LIMIT=50] -->
     <string name="all_apps_loading_message">Loading apps&#8230;</string>
     <!-- No-search-results text. [CHAR_LIMIT=50] -->
+    <!-- Shown in app drawer search when access to contacts or files is off; opens app settings. -->
+    <string name="search_permission_contacts">Turn on contacts search</string>
+    <string name="search_permission_files">Turn on files search</string>
     <string name="all_apps_search_web">Search the web for "<xliff:g id="query" example="Android">%1$s</xliff:g>"</string>
     <string name="all_apps_no_search_results">No apps found matching \"<xliff:g id="query" example="Android">%1$s</xliff:g>\"</string>
     <!-- Label for an icon representing any generic app. [CHAR_LIMIT=50] -->

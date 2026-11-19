@@ -93,6 +93,7 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
                     apps.data.stream().filter(this::isSearchableApp).toList(), query);
             // Universal search: also surface matching Settings pages.
             result.addAll(getSettingsMatchResult(query, apps.data));
+            result.addAll(ContactsAndFilesSearch.search(mContext, query));
             if (isPrivateSpaceQuery(query) && isPrivateSpaceAvailable()) {
                 result.add(0, new AdapterItem(VIEW_TYPE_PRIVATE_SPACE_RESULT));
             }
@@ -135,7 +136,7 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
                 () -> launchWebSearch(trimmed));
     }
 
-    private static AdapterItem searchActionItem(String title, Runnable action) {
+    static AdapterItem searchActionItem(String title, Runnable action) {
         AdapterItem item = new AdapterItem(VIEW_TYPE_SEARCH_ACTION);
         AppInfo placeHolder = new AppInfo();
         placeHolder.title = title;
