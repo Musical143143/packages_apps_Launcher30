@@ -179,6 +179,19 @@
     <!-- All Apps -->
     <!-- Search bar text in the apps view. [CHAR_LIMIT=50] -->
     <string name="all_apps_search_bar_hint">Search apps</string>
+    <!-- Titles for Settings pages shown in app drawer search results. -->
+    <string name="search_setting_wifi">Wi-Fi</string>
+    <string name="search_setting_bluetooth">Bluetooth</string>
+    <string name="search_setting_display">Display</string>
+    <string name="search_setting_sound">Sound</string>
+    <string name="search_setting_battery">Battery</string>
+    <string name="search_setting_storage">Storage</string>
+    <string name="search_setting_location">Location</string>
+    <string name="search_setting_apps">Apps</string>
+    <string name="search_setting_accessibility">Accessibility</string>
+    <string name="search_setting_security">Security</string>
+    <string name="search_setting_date_time">Date and time</string>
+    <string name="search_setting_about">About phone</string>
     <!-- Loading apps text. [CHAR_LIMIT=50] -->
     <string name="all_apps_loading_message">Loading apps&#8230;</string>
     <!-- No-search-results text. [CHAR_LIMIT=50] -->

@@ -19,8 +19,15 @@ import static com.android.launcher3.allapps.AlphabeticalAppsList.PRIVATE_SPACE_P
 import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_EMPTY_SEARCH;
 import static com.android.launcher3.allapps.BaseAllAppsAdapter.VIEW_TYPE_PRIVATE_SPACE_RESULT;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Handler;
+import android.os.Process;
+import android.os.UserHandle;
+import android.provider.Settings;
 
 import androidx.annotation.AnyThread;
 
@@ -79,6 +86,8 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
         mAppState.getModel().enqueueModelUpdateTask((taskController, dataModel, apps) ->  {
             ArrayList<AdapterItem> result = getTitleMatchResult(
                     apps.data.stream().filter(this::isSearchableApp).toList(), query);
+            // Universal search: also surface matching Settings pages.
+            result.addAll(getSettingsMatchResult(query, apps.data));
             if (isPrivateSpaceQuery(query) && isPrivateSpaceAvailable()) {
                 result.add(0, new AdapterItem(VIEW_TYPE_PRIVATE_SPACE_RESULT));
             }
@@ -91,6 +100,70 @@ public class DefaultAppSearchAlgorithm implements SearchAlgorithm<AdapterItem> {
                 }
             });
         });
+    }
+
+    /** A Settings page that is searchable from the app drawer. */
+    private static final class SettingsShortcut {
+        final int mTitleRes;
+        final String mAction;
+
+        SettingsShortcut(int titleRes, String action) {
+            mTitleRes = titleRes;
+            mAction = action;
+        }
+    }
+
+    private static final SettingsShortcut[] SETTINGS_SHORTCUTS = {
+            new SettingsShortcut(R.string.search_setting_wifi, Settings.ACTION_WIFI_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_bluetooth,
+                    Settings.ACTION_BLUETOOTH_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_display, Settings.ACTION_DISPLAY_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_sound, Settings.ACTION_SOUND_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_battery,
+                    Settings.ACTION_BATTERY_SAVER_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_storage,
+                    Settings.ACTION_INTERNAL_STORAGE_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_location,
+                    Settings.ACTION_LOCATION_SOURCE_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_apps,
+                    Settings.ACTION_APPLICATION_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_accessibility,
+                    Settings.ACTION_ACCESSIBILITY_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_security,
+                    Settings.ACTION_SECURITY_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_date_time, Settings.ACTION_DATE_SETTINGS),
+            new SettingsShortcut(R.string.search_setting_about, Settings.ACTION_DEVICE_INFO_SETTINGS),
+    };
+
+    /**
+     * Returns Settings pages matching the query. Pages whose target is already present as an
+     * app result are skipped so the same entry is not listed twice.
+     */
+    private ArrayList<AdapterItem> getSettingsMatchResult(String query, List<AppInfo> apps) {
+        ArrayList<AdapterItem> result = new ArrayList<>();
+        if (query.isEmpty()) {
+            return result;
+        }
+        PackageManager pm = mContext.getPackageManager();
+        UserHandle user = Process.myUserHandle();
+        ArrayList<AppInfo> candidates = new ArrayList<>();
+        for (SettingsShortcut shortcut : SETTINGS_SHORTCUTS) {
+            Intent intent = new Intent(shortcut.mAction);
+            ResolveInfo ri = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            if (ri == null || ri.activityInfo == null) {
+                continue;
+            }
+            ComponentName cn = new ComponentName(
+                    ri.activityInfo.packageName, ri.activityInfo.name);
+            boolean alreadyListed = apps.stream()
+                    .anyMatch(app -> cn.equals(app.componentName));
+            if (alreadyListed) {
+                continue;
+            }
+            candidates.add(new AppInfo(cn, mContext.getString(shortcut.mTitleRes), user, intent));
+        }
+        result.addAll(getTitleMatchResult(candidates, query));
+        return result;
     }
 
     private static AdapterItem getEmptyMessageAdapterItem(String query) {
