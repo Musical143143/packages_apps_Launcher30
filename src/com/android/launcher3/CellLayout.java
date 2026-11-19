@@ -91,6 +91,11 @@ import java.util.Stack;
 
 public class CellLayout extends ViewGroup {
     private static final String TAG = "CellLayout";
+    /**
+     * How much a home page shrinks when it is a full page away from the centre while scrolling.
+     * Gives the home screen swipe a subtle depth effect.
+     */
+    private static final float SCROLL_DEPTH_SCALE = 0.06f;
     private static final boolean LOGD = true;
 
     /** The color of the "leave-behind" shape when a folder is opened from Hotseat. */
@@ -578,6 +583,7 @@ public class CellLayout extends ViewGroup {
             mSpringLoadedProgress = progress;
             updateBgAlpha();
             setGridAlpha(progress);
+            updateScrollDepthScale();
         }
     }
 
@@ -602,7 +608,28 @@ public class CellLayout extends ViewGroup {
         if (Float.compare(Math.abs(progress), mScrollProgress) != 0) {
             mScrollProgress = Math.abs(progress);
             updateBgAlpha();
+            updateScrollDepthScale();
         }
+    }
+
+    /**
+     * Shrinks the page contents slightly as the page moves away from the centre of the screen.
+     * The page is kept at full size while in spring-loaded (drag) mode so drop targets are not
+     * affected.
+     */
+    private void updateScrollDepthScale() {
+        if (mShortcutsAndWidgets == null) {
+            // Called before the constructor has finished initializing the child container.
+            return;
+        }
+        float scale = 1f;
+        if (mSpringLoadedProgress <= 0f) {
+            scale = 1f - SCROLL_DEPTH_SCALE * Math.min(mScrollProgress, 1f);
+        }
+        mShortcutsAndWidgets.setPivotX(getWidth() / 2f);
+        mShortcutsAndWidgets.setPivotY(getHeight() / 2f);
+        mShortcutsAndWidgets.setScaleX(scale);
+        mShortcutsAndWidgets.setScaleY(scale);
     }
 
     private void setGridAlpha(float gridAlpha) {
